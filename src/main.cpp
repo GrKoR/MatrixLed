@@ -32,6 +32,7 @@
 #include <SerialUtils.h>
 //#include <MatrixLed.h>
 #include <MatrixLogic.h>
+#include <OutputLogic.h>
 #include <CANLibrary.h>
 /* USER CODE END Includes */
 
@@ -594,6 +595,7 @@ int main(void)
 #ifdef MATRIX_LIB
 	Matrix::Setup();
 #endif
+	Output::Setup();
 
 // HAL_InitTick(0);
 
@@ -661,6 +663,8 @@ int main(void)
 	*/
 
 #endif
+
+		Output::Loop(current_time);
 		
 		if(readCAN != 0){
 			if(RxData[6] == 0x31){
