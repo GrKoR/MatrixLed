@@ -23,17 +23,15 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-//#include "ws2812.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
-//#include "RGB.h"
 #include "sd.h"
 #include <SerialUtils.h>
 //#include <MatrixLed.h>
 #include <MatrixLogic.h>
-#include <OutputLogic.h>
 #include <CANLibrary.h>
+#include <OutputLogic.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -67,23 +65,6 @@
 	#define OUT5_OFF	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);			// Выкл
 	#define OUT6_ON		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_SET);			// Вкл
 	#define OUT6_OFF	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, GPIO_PIN_RESET);			// Выкл
-	
-	#define cntRead	1024 //6200
-//	#define PWM_HI	0x2B	//43
-//	#define PWM_LO	0x15	//21
-
-	#define ARGB_LIB
-	#define DEBAG_RGB
-  #define MATRIX_LIB
-
-	#define ClearBit(reg, bit)       reg &= (~(1<<(bit)))   //пример: ClearBit(PORTB, 1); //сбросить 1-й бит PORTB
-	#define SetBit(reg, bit)          reg |= (1<<(bit))     //пример: SetBit(PORTB, 3); //установить 3-й бит PORTB
-	#define BitIsClear(reg, bit)    ((reg & (1<<(bit))) == 0)		//пример: if (BitIsClear(PORTB,1)) {...} //если бит очищен
-	#define BitIsSet(reg, bit)       ((reg & (1<<(bit))) != 0)		//пример: if(BitIsSet(PORTB,2)) {...} //если бит установлен
-
-	#define DELAY_VAL 100
-
-
 
 /* USER CODE END PD */
 
@@ -112,27 +93,11 @@ UART_HandleTypeDef huart1;
 
 // For SD
 
-	uint16_t cntBytesStat =0;
-	uint16_t strLen = 160;
-	uint16_t strLenData = 160;
 	uint8_t fileName[16];
 	volatile uint16_t Timer1=0;
 	uint8_t sect[512];
-#ifndef MATRIX_LIB
-  uint8_t readBuff[cntRead];	
-#else							
-  uint32_t FrameBufferLen = 0;
-#endif	
-
-	// uint8_t writeBuff[1024];
-
-	UINT  cntReadBytes;
-	//char buffer1[512] ="Selection of VAM is set by the previous address set instruction. If the address set instruction of RAM is not performed before this instruction, the data that has been read first is invalid, as the direction of AC is not yet determined. If RAM data is read several times without RAM address instructions set before, read operation, the correct RAM data can be obtained from the second. But the first data would be incorrect, as there is no time margin to transfer RAM data. In case of DDRAM read operation The..."; //Ѕуфер данных дл¤ записи/чтени¤
-	extern char str1[60];
-	uint32_t byteswritten,bytesread;
 	uint8_t result;
 	uint8_t readCAN =0;
-	
 	FILINFO fileInfo;
 	char *fn;
 	DIR dir;
@@ -140,20 +105,11 @@ UART_HandleTypeDef huart1;
 	FRESULT res; //результат выполнения
 	DWORD fre_clust, fre_sect, tot_sect;
 	
-	//extern char USER_Path[4]; /* logical drive path */
 	FATFS SDFatFs;
 	FATFS *fs;
-#ifndef MATRIX_LIB
-  FIL MyFile;	
-#endif	
 
 // For RGB
-// uint8_t *buffer;
-extern uint8_t *RGB_BUF;
-//extern u16_t BUF_COUNTER;
 
-//	extern uint16_t BUF_DMA [ARRAY_LEN];
-//	extern uint8_t PWM_BUF[1028] = {0,};
 // For CAN
 	CAN_TxHeaderTypeDef TxHeader;
 	CAN_RxHeaderTypeDef RxHeader;
@@ -162,7 +118,6 @@ extern uint8_t *RGB_BUF;
 	uint32_t TxMailbox = 0;
 	uint8_t trans_str[30];
 
-uint8_t TxOut[18] = {0,};
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -217,214 +172,50 @@ void HAL_CAN_Send()
 		{
 //			HAL_UART_Transmit(&huart1, (uint8_t*)"ER SEND\n", 8, 100);
 		}
-//		HAL_Delay(500);
 }
 
 
 //========================== for SD Card:
-#ifndef MATRIX_LIB
-
-FRESULT ReadFile(void){
-  uint16_t i=0, i1=0;
-  uint32_t ind=0;
-  uint32_t f_size = MyFile.fsize;
-	cntBytesStat = 0;
-	
-  ind=0;
-  do
-  {
-    if(f_size<512)
-    {
-      i1=f_size;
-    }
-    else
-    {
-      i1=512;
-    }
-    f_size-=i1;
-    f_lseek(&MyFile,ind);
-    f_read(&MyFile,sect,i1,(UINT *)&bytesread);		//( , Указатель на буфер данных, кол-во байт для чтения, Указатель на кол-во прочитанных байтов) чтение по 512 байт
-
-		
-    for(i=0;i<bytesread;i++)
-    {
-//			readBuff[cntBytesStat] = *sect+i;
-			readBuff[cntBytesStat] = sect[i];
-			cntBytesStat++;
-
-    }
-    ind+=i1;
-  }
-  while(f_size>0);
-	
-  return FR_OK;
-}
-
-FRESULT ReadFileOUT(void){
-  uint16_t i=0, i1=0, it=0;
-  uint32_t ind=0;
-  uint32_t f_size = MyFile.fsize;
-	cntBytesStat = 0;		// общее количество прочитанных байт (глобальная переменная)
-	uint16_t cntBytesFrame = 0;		// 
-	uint16_t k = 0;
-	
-  ind=0;
-  do
-  {
-    if(f_size<512)
-    {
-      i1=f_size;
-    }
-    else
-    {
-      i1=512;
-    }
-    f_size-=i1;
-    f_lseek(&MyFile,ind);
-    f_read(&MyFile,sect,i1,(UINT *)&bytesread);		//( , Указатель на буфер данных, кол-во байт для чтения, Указатель на кол-во прочитанных байтов) чтение по 512 байт
-
-		// переносим считанные байты из файла в буфер 
-		
-		if(cntBytesStat == 0){				// первый сектор с инфой 1байт
-			for(i=1;i<bytesread;i+=3){
-				ARGB_SetRGB(k, sect[i+2], sect[i+1], sect[i]); // Set LED № with R, G, B
-				k++;
-				cntBytesStat+=3;
-				cntBytesFrame+=3;
-			}
-		}
-		else{											// следующие сектора  с чистыми данными 
-			for(it=0;it<bytesread;it+=3){
-				ARGB_SetRGB(k, sect[it+2], sect[it+1], sect[it]); // Set LED № with R, G, B
-				k++;
-				cntBytesStat+=3;
-				cntBytesFrame+=3;
-				// if read frame
-				if(cntBytesFrame >= 6143){
-					cntBytesFrame = 0;
-					k = 0;
-					it ++;
-					while (!RGB_Show());
-				}
-				
-			}
-		}
-    ind+=i1;
-  }
-  while(f_size>0);
-	
-  return FR_OK;
-}
-
-FRESULT ReadFilePXL(void){
-  uint16_t i=0, i1=0, it=0;
-  uint32_t ind=0;
-  uint32_t f_size = MyFile.fsize;
-	cntBytesStat = 0;		// общее количество прочитанных байт (глобальная переменная)
-	uint16_t cntBytesFrame = 0;		// 
-	uint16_t k = 0;
-	
-  ind=0;
-  do
-  {
-    if(f_size<512)
-    {
-      i1=f_size;
-    }
-    else
-    {
-      i1=512;
-    }
-    f_size-=i1;
-    f_lseek(&MyFile,ind);
-    f_read(&MyFile,sect,i1,(UINT *)&bytesread);		//( , Указатель на буфер данных, кол-во байт для чтения, Указатель на кол-во прочитанных байтов) чтение по 512 байт
-
-		// переносим считанные байты из файла в буфер 
-		
-		if(cntBytesStat == 0){				// первый сектор с инфой 1байт
-			for(i=1;i<bytesread;i+=3){
-				RGB_SetRGB(k, sect[i+2], sect[i+1], sect[i],(u8_t *)&buffer); // Set LED № with R, G, B
-				k++;
-				cntBytesStat+=3;
-				cntBytesFrame+=3;
-			}
-		}
-		else{											// следующие сектора  с чистыми данными 
-			for(it=0;it<bytesread;it+=3){
-				RGB_SetRGB(k, sect[it+2], sect[it+1], sect[it],(u8_t *)&buffer); // Set LED № with R, G, B
-				k++;
-				cntBytesStat+=3;
-				cntBytesFrame+=3;
-				// if read frame
-				if(cntBytesFrame >= 6143){
-					cntBytesFrame = 0;
-					k = 0;
-					it ++;
-					while (!RGB_Show());
-				}
-				
-			}
-		}
-    ind+=i1;
-  }
-  while(f_size>0);
-	
-  return FR_OK;
-}
-#endif	
 
 void InitFlash(void){
-			disk_initialize(SDFatFs.drv);
-		f_mount(&SDFatFs,"",0);
+	disk_initialize(SDFatFs.drv);
 
 	if(f_mount(&SDFatFs,"",0)!=FR_OK)
 	{
 //		Error_Handler();
-		// HAL_UART_Transmit(&huart1,(uint8_t*)"mount error",12,0x1000);
+// HAL_UART_Transmit(&huart1,(uint8_t*)"mount error",12,0x1000);
 	}
 	else
 	{
-		fileInfo.lfname = (char*)sect;
-		fileInfo.lfsize = sizeof(sect);
-		result = f_opendir(&dir, "/");
-		if (result == FR_OK)
-		{
-			while(1)
-			{
-				result = f_readdir(&dir, &fileInfo);			// 4200 байт 
-				if (result==FR_OK && fileInfo.fname[0])
-				{
-					fn = fileInfo.lfname;
-					if(strlen(fn)) {
-						// HAL_UART_Transmit(&huart1,(uint8_t*)fn,strlen(fn),0x1000);
-						
-					}
-					else {
-						// HAL_UART_Transmit(&huart1,(uint8_t*)fileInfo.fname,strlen((char*)fileInfo.fname),0x1000);
-						
-//						BMPtoBIN();
-//						PtoBIN();
-
-					}
-					if(fileInfo.fattrib&AM_DIR)
-					{
-						// HAL_UART_Transmit(&huart1,(uint8_t*)"  [DIR]",7,0x1000);
-					}					
-				}
-				else break;
-				// HAL_UART_Transmit(&huart1,(uint8_t*)"\r\n",2,0x1000);
-			}
-			f_closedir(&dir);
-		}
-		
+		// fileInfo.lfname = (char*)sect;
+		// fileInfo.lfsize = sizeof(sect);
+		// result = f_opendir(&dir, "/");
+		// if (result == FR_OK)
+		// {
+		// 	while(1)
+		// 	{
+		// 		result = f_readdir(&dir, &fileInfo);	
+		// 		if (result==FR_OK && fileInfo.fname[0])
+		// 		{
+		// 			fn = fileInfo.lfname;
+		// 			if(strlen(fn)) {
+		// 				// HAL_UART_Transmit(&huart1,(uint8_t*)fn,strlen(fn),0x1000);
+		// 			}
+		// 			else {
+		// 				// HAL_UART_Transmit(&huart1,(uint8_t*)fileInfo.fname,strlen((char*)fileInfo.fname),0x1000);
+		// 			}
+		// 			if(fileInfo.fattrib&AM_DIR)
+		// 			{
+		// 				// HAL_UART_Transmit(&huart1,(uint8_t*)"  [DIR]",7,0x1000);
+		// 			}					
+		// 		}
+		// 		else break;
+		// 		// HAL_UART_Transmit(&huart1,(uint8_t*)"\r\n",2,0x1000);
+		// 	}
+		// 	f_closedir(&dir);
+		// }
 	}
 }
-
-#ifdef MATRIX_LIB
-
-#endif
-
-uint32_t current_time = 0;
 
 /* USER CODE END 0 */
 
@@ -468,7 +259,6 @@ int main(void)
   MX_ADC1_Init();
   /* USER CODE BEGIN 2 */
 
-
 	HAL_TIM_Base_Start_IT(&htim1);
 	
 	OUT1_OFF;
@@ -482,235 +272,40 @@ int main(void)
 	LedBlue_OFF;
 	LedRed_OFF;
 	LedYellow_OFF;
-	
-	LedRed_ON;
-	HAL_Delay(DELAY_VAL);
-	LedRed_OFF;
-	
-	LedYellow_ON;
-	HAL_Delay(DELAY_VAL);
-	LedYellow_OFF;
-	
-	LedGreen_ON;
-	HAL_Delay(DELAY_VAL);
-	LedGreen_OFF;
-	
-	LedBlue_ON;
-	HAL_Delay(DELAY_VAL);
-	LedBlue_OFF;
-	
-		/* 
-		Заполняем структуру отвечающую за отправку кадров
-		StdId — это идентификатор стандартного кадра.
-		ExtId — это идентификатор расширенного кадра. Мы будем отправлять стандартный поэтому сюда пишем 0.
-		RTR = CAN_RTR_DATA — это говорит о том, что мы отправляем кадр с данными (Data Frame). Если указать CAN_RTR_REMOTE, тогда это будет Remote Frame.
-		IDE = CAN_ID_STD — это говорит о том, что мы отправляем стандартный кадр. Если указать CAN_ID_EXT, тогда это будет расширенный кадр. В StdId нужно будет указать 0, а в ExtId записать расширенный идентификатор.
-		DLC = 8 — количество полезных байт передаваемых в кадре (от 1 до 8).
-		TransmitGlobalTime — относится к Time Triggered Communication Mode, мы это не используем поэтому пишем 0.
-	*/
-	TxHeader.StdId = 0x07B0;
-	TxHeader.ExtId = 0;
-	TxHeader.RTR = CAN_RTR_DATA; //CAN_RTR_REMOTE
-	TxHeader.IDE = CAN_ID_STD;   // CAN_ID_EXT
-	TxHeader.DLC = 8;
-	TxHeader.TransmitGlobalTime = DISABLE;
-	
+
 	
 	/* активируем события которые будут вызывать прерывания  */
 	HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE);
 	
 	HAL_CAN_Start(&hcan);
-	
-	TxHeader.StdId = 0x07B0;
-	TxHeader.DLC = 7;
-	TxData[0] = 0x44;
-	TxData[1] = 0x53;
-	TxData[2] = 0x46;
-	TxData[3] = 0x30;
-	TxData[4] = 0x30;
-	TxData[5] = 0x30;
-	TxData[6] = 0x33;
-	TxData[7] = 0x00;
-	
-	TxOut[0] = 0;
-	TxOut[1] = 50;
-	TxOut[2] = 0;
-	TxOut[3] = 0;
-	TxOut[4] = 50;
-	TxOut[5] = 0;
-	TxOut[6] = 0;
-	TxOut[7] = 50;
-  TxOut[8] = 0;
-  TxOut[9] = 0;
-	TxOut[10] = 50;
-	TxOut[11] = 0;
-	TxOut[12] = 0;
-	TxOut[13] = 50;
-	TxOut[14] = 0;
-	TxOut[15] = 0;
-	TxOut[16] = 50;
-  TxOut[17] = 0;
-
-  //ARGB_Init();  // Initialization
-  //ARGB_SetBrightness(50);  // Set global brightness to 30%
-  // RGB_FillRGB(0, 50, 0, RGB_BUF); // Fill all the strip with Red
-  // RGB_BUF = (uint8_t *)TxOut;
-
-  // RGB_BUF[2] = 0;
-
-// uint8_t ptr1 = *(RGB_BUF);   
-// ptr1 = 0;
-
-// uint8_t ptr2= *(RGB_BUF+1);   
-// ptr2 = 0;
-
-// uint8_t ptr3= *(RGB_BUF+2);   
-// ptr3 = 0;
-
-
-//  *(RGB_BUF + 3) = *(TxData + 1);
-// *(RGB_BUF + 3) = (uint8_t *)TxData;
-
- 
-  // RGB_BUF[2] = 0;
-  // // RGB_Clear(); // Clear stirp
-  // while (RGB_Show() != ARGB_OK); // Update - Option 1
-  // HAL_Delay(1000);
-
-#ifndef MATRIX_LIB
-  #ifdef ARGB_LIB
-    ARGB_Init();  // Initialization
-    ARGB_SetBrightness(50);  // Set global brightness to 30%
-    ARGB_FillRGB(0, 20, 0); // Fill all the strip with Red
-  //	ARGB_Clear(); // Clear stirp
-    while (RGB_Show() != ARGB_OK); // Update - Option 1
-  #else				
-    ws2812_init(); 			
-  #endif		
-#endif	
 
 	InitFlash();
 		
-
-#ifdef MATRIX_LIB
 	Matrix::Setup();
-#endif
 	Output::Setup();
 
 // HAL_InitTick(0);
 
-
-		uint8_t fnm = 1;
   /* USER CODE END 2 */
 
 
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//	uint16_t cn=1000;
+
+uint32_t time;
+
   while (1)
   {
+
+	time = HAL_GetTick();
 
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	current_time = HAL_GetTick();
 
-#ifdef MATRIX_LIB
-
-	Matrix::Loop(current_time);
-		
-
-		/*
-		matrix.Processing(current_time);
-		uint32_t current_time2 = HAL_GetTick();
-		/
-
-		// if( matrix.GetFrameBufferPtr(RGB_BUF) == true )
-		// {
-    //   FrameBufferLen = matrix.GetFrameBufferLen();
-		// 	HAL_UART_Transmit(&huart1, RGB_BUF, FrameBufferLen, 1000);
-    //   while (RGB_Show());
-    //   // HAL_Delay(120);
-    //   while(BUF_COUNTER != 0){HAL_Delay(1);}
-    //   if(BUF_COUNTER == 0){
-    //     matrix.SetFrameBufferSend();
-    //   }
-		// 	//SerialPrint("time:", 6);
-		// 	//char snum[10] = {0xAA, };
-		// 	//itoa((current_time2 - current_time), snum, sizeof(snum));
-		// 	//SerialPrint(snum, sizeof(snum));
-		// }
-
-    // uint32_t current_time3;
-    // uint32_t current_time4;
-	
-    if(matrix.IsBufferReady() == true){
-      matrix.SetFrameDrawStart();
-      // current_time3 = HAL_GetTick();
-      RGB_Show();
-			SerialPrint("time:", 6);
-			char snum[10] = {0xAA, };
-			itoa((current_time2 - current_time), snum, sizeof(snum));
-			SerialPrint(snum, sizeof(snum));
-    }
-
-    if(BUF_COUNTER == 0){
-      // current_time4 = HAL_GetTick();
-      matrix.SetFrameDrawEnd();
-      // volatile uint32_t current_ = current_time4 - current_time3;
-    }
-	*/
-
-#endif
-
-		Output::Loop(current_time);
-		
-		if(readCAN != 0){
-			if(RxData[6] == 0x31){
-        LedGreen_ON;
-				fnm ++;
-				if(fnm >5) fnm = 1;
-				fileName[3] = fnm+0x30;
-				
-				fileName[0] = '0'; 
-				fileName[1] = '0';
-				fileName[2] = '0';
-				fileName[3] = '9';
-				fileName[4] = '.';
-				fileName[5] = 'o';
-				fileName[6] = 'u';
-				fileName[7] = 't';
-				fileName[8] = '\0';
-				
-			}
-			if(RxData[6] == 0x32){
-        LedGreen_OFF;
-				//ARGB_FillRGB(0, 0, 0); // Fill all the strip with Red
-				// while (!RGB_Show());
-				fileName[3] = 0;		// чтобы не читал файл
-			}
-
- #ifndef MATRIX_LIB
-			uint8_t resultF = f_open(&MyFile, (char*)fileName, FA_READ);	//"123.txt"
-			if(resultF == FR_OK){
-				ReadFilePXL();
-				f_close(&MyFile);
-			}
- #endif
-			readCAN = 0;
-		}
-		
-		if(Button1 == 0){
-			TxData[6] = 0x31;
-//			HAL_CAN_Send();
-			RxData[6] = 0x31;
-			readCAN = 1;
-		}
-		if(Button2 == 0){
-			TxData[6] = 0x32;
-			HAL_CAN_Send();
-		}
+	Matrix::Loop(time);
+	Output::Loop(time);
 		
   }
   /* USER CODE END 3 */
