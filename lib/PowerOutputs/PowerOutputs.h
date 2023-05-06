@@ -10,7 +10,7 @@
 
 extern ADC_HandleTypeDef hadc1;
 
-template <uint8_t _ports_max = 1> 
+template <uint8_t _ports_max> 
 class PowerOutputs
 {
 	using event_short_circuit_t = void (*)(uint8_t num, uint16_t current);
@@ -25,10 +25,15 @@ class PowerOutputs
 	
 	public:
 		
-		PowerOutputs()
+		PowerOutputs(uint32_t vref, uint8_t gain, uint8_t shunt) : _vref(vref), _gain(gain), _shunt(shunt)
 		{
 			memset(&_ports, 0x00, sizeof(_ports));
 			
+			return;
+		}
+
+		void Init()
+		{
 			HAL_ADCEx_Calibration_Start(&hadc1);
 			
 			return;
@@ -129,12 +134,13 @@ class PowerOutputs
 			_adc_config.Channel = channel;
 			
 			HAL_ADC_ConfigChannel(&hadc1, &_adc_config);
+			//HAL_ADCEx_Calibration_Start(&hadc1);
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 5);
 			uint16_t adc = HAL_ADC_GetValue(&hadc1);
 			//HAL_ADC_Stop(&hadc1);
 			
-			return (((3300000 / 4095) * adc) / 50) / 5;
+			return ((((_vref / 4095) * adc) / _gain) / _shunt);
 		}
 		
 		int8_t _CheckCurrent(uint16_t current)
@@ -150,6 +156,10 @@ class PowerOutputs
 			
 			return;
 		}
+
+		const uint32_t _vref;
+		const uint8_t _gain;
+		const uint8_t _shunt;
 		
 		ADC_ChannelConfTypeDef _adc_config = { ADC_CHANNEL_1, ADC_REGULAR_RANK_1, ADC_SAMPLETIME_1CYCLE_5 };
 		
