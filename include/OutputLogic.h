@@ -29,9 +29,29 @@ inline void Setup()
 	return;
 }
 
+uint8_t port_idx = 0;
+u_int32_t last_time = 0;
+
 inline void Loop(uint32_t &current_time)
 {
 	pout.Processing(current_time);
+
+	if(current_time - last_time > 250)
+	{
+		last_time = current_time;
+
+		if(++port_idx == 7) port_idx = 1;
+
+		for(uint8_t i = 1; i < 7; ++i)
+		{
+			if(port_idx == i) pout.On(i);
+			else pout.Off(i);
+
+			Serial::Print("P1: "); Serial::Print( (uint32_t)pout.Current(i) ); Serial::Println();
+		}
+		Serial::Println();
+
+	}
 	
 	// Обновляем текущее время, чтобы все последующий вызовы текущего loop получили его актуальным.
 	current_time = HAL_GetTick();

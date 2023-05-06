@@ -29,6 +29,8 @@ class PowerOutputs
 		{
 			memset(&_ports, 0x00, sizeof(_ports));
 			
+			HAL_ADCEx_Calibration_Start(&hadc1);
+			
 			return;
 		}
 		
@@ -130,7 +132,7 @@ class PowerOutputs
 			HAL_ADC_Start(&hadc1);
 			HAL_ADC_PollForConversion(&hadc1, 5);
 			uint16_t adc = HAL_ADC_GetValue(&hadc1);
-			HAL_ADC_Stop(&hadc1);
+			//HAL_ADC_Stop(&hadc1);
 			
 			return (((3300000 / 4095) * adc) / 50) / 5;
 		}
