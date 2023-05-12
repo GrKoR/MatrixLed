@@ -1,7 +1,6 @@
 #pragma once
 
 #include <CANLibrary.h>
-#include "can_abstarction.h"
 
 void HAL_CAN_Send(can_object_id_t id, uint8_t *data, uint8_t length);
 
@@ -19,7 +18,9 @@ namespace CANLib
 
 	/// @brief The size of CANManager's internal CAN frame buffer
 	static constexpr uint8_t CFG_CANFrameBufferSize = 16;
+
 	//*********************************************************************
+	// CAN Manager & CAN Object configuration
 	//*********************************************************************
 
 	// structure for all data fields of CANObject
@@ -27,21 +28,94 @@ namespace CANLib
 
 	CANManager<CFG_CANObjectsCount, CFG_CANFrameBufferSize> can_manager(&HAL_CAN_Send);
 
-	// common blocks
-	CANObject<uint8_t, 7> obj_block_info(REAR_LIGHT_CANO_ID_BLOCK_INFO, 15000, 300);
-	CANObject<uint8_t, 7> obj_block_health(REAR_LIGHT_CANO_ID_BLOCK_HEALTH, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 7> obj_block_cfg(REAR_LIGHT_CANO_ID_BLOCK_CFG, CAN_TIMER_DISABLED, CAN_ERROR_DISABLED);
-	CANObject<uint8_t, 7> obj_block_error(REAR_LIGHT_CANO_ID_BLOCK_ERROR, CAN_TIMER_DISABLED, 300);
+	// ******************** common blocks ********************
+	// 0x00E0	BlockInfo
+	// request | timer:15000
+	// byte	1 + 7	{ type[0] data[1..7] }
+	// Основная информация о блоке. См. "Системные параметры".
+	CANObject<uint8_t, 7> obj_block_info(0x00E0, 15000, 300);
 
-	// specific blocks
-	CANObject<uint8_t, 1> obj_side_beam(REAR_LIGHT_CANO_ID_SIDE_BEAM, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_brake_light(REAR_LIGHT_CANO_ID_BRAKE_LIGHT, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_reverse_light(REAR_LIGHT_CANO_ID_REVERSE_LIGHT, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_left_indicator(REAR_LIGHT_CANO_ID_LEFT_INDICATOR, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_right_indicator(REAR_LIGHT_CANO_ID_RIGHT_INDICATOR, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_hazard_beam(REAR_LIGHT_CANO_ID_HAZARD_BEAM, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_custom_beam(REAR_LIGHT_CANO_ID_CUSTOM_BEAM, CAN_TIMER_DISABLED, 300);
-	CANObject<uint8_t, 1> obj_custom_image(REAR_LIGHT_CANO_ID_CUSTOM_IMAGE, CAN_TIMER_DISABLED, 300);
+	// 0x00E1	BlockHealth
+	// request | event
+	// byte	1 + 7	{ type[0] data[1..7] }
+	// Информация о здоровье блока. См. "Системные параметры".
+	CANObject<uint8_t, 7> obj_block_health(0x00E1, CAN_TIMER_DISABLED, 300);
+
+	// 0x00E2	BlockCfg
+	// request
+	// byte	1 + 1 + X	{ type[0] param[1] data[2..7] }
+	// Чтение и запись настроек блока. См. "Системные параметры".
+	CANObject<uint8_t, 7> obj_block_cfg(0x00E2, CAN_TIMER_DISABLED, CAN_ERROR_DISABLED);
+
+
+	// 0x00E3	BlockError
+	// request | event
+	// byte	1 + X	{ type[0] data[1..7] }
+	// Ошибки блока. См. "Системные параметры".
+	CANObject<uint8_t, 7> obj_block_error(0x00E3, CAN_TIMER_DISABLED, 300);
+
+	// ******************** specific blocks ********************
+
+	// 0x00E4	SideBeam
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление габаритами.
+	CANObject<uint8_t, 1> obj_side_beam(0x00E4, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00E5	BrakeLight
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление стоп-сигналами.
+	CANObject<uint8_t, 1> obj_brake_light(0x00E5, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00E6	ReverseLight
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление задним ходом.
+	CANObject<uint8_t, 1> obj_reverse_light(0x00E6, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00E7	LeftIndicator
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление левым поворотником.
+	CANObject<uint8_t, 1> obj_left_indicator(0x00E7, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00E8	RightIndicator
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление правым поворотником.
+	CANObject<uint8_t, 1> obj_right_indicator(0x00E8, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00E9	HazardBeam
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление аварийным сигналом.
+	CANObject<uint8_t, 1> obj_hazard_beam(0x00E9, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00EA	CustomBeam
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление пользовательским светом.
+	CANObject<uint8_t, 1> obj_custom_beam(0x00EA, CAN_TIMER_DISABLED, 300);
+
+
+	// 0x00EB	CustomImage
+	// set | request | event
+	// uint8_t	0..255	1 + 1	{ type[0] val[1] }
+	// Управление пользовательскими изображениями ( для WS2812b ).
+	CANObject<uint8_t, 1> obj_custom_image(0x00EB, CAN_TIMER_DISABLED, 300);
+
+	// 0x00EC	ImageTransfer
+	// send raw
+	// Link 1 + X	{ type[0] data[1..7] }
+	// Для передачи изображений
+	// TODO: this function has been put on hold.
 
 	// вызывается, если по CAN пришла команда включения/выключения габаритов
 	void side_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
