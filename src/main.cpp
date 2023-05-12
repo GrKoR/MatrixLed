@@ -29,23 +29,6 @@
 #include <OutputLogic.h>
 #include <CANLogic.h>
 
-// Green LED lights up, when programm falls in the Error_Handler()
-#define LedGreen_ON HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET)
-#define LedGreen_OFF HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET)
-
-// Blue LED is unused yet
-#define LedBlue_ON HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_SET)
-#define LedBlue_OFF HAL_GPIO_WritePin(GPIOB, GPIO_PIN_3, GPIO_PIN_RESET)
-
-// Red LED lights up, if flash-card initialization failed
-#define LedRed_ON HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_SET)
-#define LedRed_OFF HAL_GPIO_WritePin(GPIOB, GPIO_PIN_6, GPIO_PIN_RESET)
-
-// Yellow LED is on while free CAN mailboxes are not available.
-// When at least one mailbox is free, LED will go off.
-#define LedYellow_ON HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET)
-#define LedYellow_OFF HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_RESET)
-
 // Peripheral variables
 ADC_HandleTypeDef hadc1;
 CAN_HandleTypeDef hcan;
@@ -115,9 +98,9 @@ void HAL_CAN_Send(can_object_id_t id, uint8_t *data, uint8_t length)
 
     while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan) == 0)
     {
-        LedYellow_ON;
+        Leds::ledsObj.SetOn(Leds::ledsObj.LED_YELLOW);
     }
-    LedYellow_OFF;
+    Leds::ledsObj.SetOff(Leds::ledsObj.LED_YELLOW);
 
     if (HAL_CAN_AddTxMessage(&hcan, &TxHeader, TxData, &TxMailbox) != HAL_OK)
     {
@@ -133,8 +116,7 @@ void InitFlash()
     // f_mount(&SDFatFs, "", 0);
     if (f_mount(&SDFatFs, "", 1) != FR_OK)
     {
-        //LedRed_ON;
-		Leds::ledsObj.SetOn(Leds::ledsObj.LED_RED, 250, 250);
+        Leds::ledsObj.SetOn(Leds::ledsObj.LED_RED, 250, 250);
     }
     /*
     else
@@ -191,31 +173,6 @@ void InitPeripherals()
     HAL_TIM_Base_Start_IT(&htim1);
 };
 
-/// @brief Make all LEDs blink on startup
-void InitialLEDblinks()
-{
-    LedGreen_OFF;
-    LedBlue_OFF;
-    LedRed_OFF;
-    LedYellow_OFF;
-
-    LedRed_ON;
-    HAL_Delay(100);
-    LedRed_OFF;
-
-    LedYellow_ON;
-    HAL_Delay(100);
-    LedYellow_OFF;
-
-    LedGreen_ON;
-    HAL_Delay(100);
-    LedGreen_OFF;
-
-    LedBlue_ON;
-    HAL_Delay(100);
-    LedBlue_OFF;
-};
-
 /// @brief  The application entry point.
 /// @retval int
 int main(void)
@@ -227,10 +184,14 @@ int main(void)
     SystemClock_Config();
 
     InitPeripherals();
-    InitialLEDblinks();
 
-	// Сразу после инициализации периферии, иначе программа упадёт, если попробовать включить диод.
-	Leds::Setup();
+    // Сразу после инициализации периферии, иначе программа упадёт, если попробовать включить диод.
+    // Green LED lights up, when programm falls in the Error_Handler()
+    // Blue LED is unused yet
+    // Red LED lights up, if flash-card initialization failed
+    // Yellow LED is on while free CAN mailboxes are not available.
+    // When at least one mailbox is free, LED will go off.
+    Leds::Setup();
 
     /* активируем события которые будут вызывать прерывания  */
     HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE);
@@ -248,7 +209,7 @@ int main(void)
     {
         // don't need to update current_time because it is always updated by Loop() functions
         // current_time = HAL_GetTick();
-		Leds::Loop(current_time);
+        Leds::Loop(current_time);
         CANLib::Loop(current_time);
         Matrix::Loop(current_time);
         Outputs::Loop(current_time);
@@ -605,7 +566,7 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
  */
 void Error_Handler(void)
 {
-    LedGreen_ON;
+    Leds::ledsObj.SetOff(Leds::ledsObj.LED_GREEN);
     while (1)
     {
     }
