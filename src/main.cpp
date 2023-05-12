@@ -191,31 +191,6 @@ void InitPeripherals()
     HAL_TIM_Base_Start_IT(&htim1);
 };
 
-/// @brief Make all LEDs blink on startup
-void InitialLEDblinks()
-{
-    LedGreen_OFF;
-    LedBlue_OFF;
-    LedRed_OFF;
-    LedYellow_OFF;
-
-    LedRed_ON;
-    HAL_Delay(100);
-    LedRed_OFF;
-
-    LedYellow_ON;
-    HAL_Delay(100);
-    LedYellow_OFF;
-
-    LedGreen_ON;
-    HAL_Delay(100);
-    LedGreen_OFF;
-
-    LedBlue_ON;
-    HAL_Delay(100);
-    LedBlue_OFF;
-};
-
 /// @brief  The application entry point.
 /// @retval int
 int main(void)
@@ -227,7 +202,6 @@ int main(void)
     SystemClock_Config();
 
     InitPeripherals();
-    InitialLEDblinks();
 
 	// Сразу после инициализации периферии, иначе программа упадёт, если попробовать включить диод.
 	Leds::Setup();
