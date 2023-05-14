@@ -23,8 +23,9 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include "sd.h"
-#include <Leds.h>
 #include <SerialUtils.h>
+#include <About.h>
+#include <Leds.h>
 #include <MatrixLogic.h>
 #include <OutputLogic.h>
 #include <CANLogic.h>
@@ -191,9 +192,10 @@ int main(void)
     // Red LED lights up, if flash-card initialization failed
     // Yellow LED is on while free CAN mailboxes are not available.
     // When at least one mailbox is free, LED will go off.
-    Leds::Setup();
-
-    /* активируем события которые будут вызывать прерывания  */
+	About::Setup();
+	Leds::Setup();
+	
+	/* активируем события которые будут вызывать прерывания  */
     HAL_CAN_ActivateNotification(&hcan, CAN_IT_RX_FIFO0_MSG_PENDING | CAN_IT_ERROR | CAN_IT_BUSOFF | CAN_IT_LAST_ERROR_CODE);
 
     HAL_CAN_Start(&hcan);
@@ -209,7 +211,8 @@ int main(void)
     {
         // don't need to update current_time because it is always updated by Loop() functions
         // current_time = HAL_GetTick();
-        Leds::Loop(current_time);
+        About::Loop(current_time);
+		Leds::Loop(current_time);
         CANLib::Loop(current_time);
         Matrix::Loop(current_time);
         Outputs::Loop(current_time);
