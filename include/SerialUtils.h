@@ -1,6 +1,8 @@
 #pragma once
 
 #include <inttypes.h>
+#include <stdarg.h>
+#include <stdio.h>
 
 extern UART_HandleTypeDef huart1;
 
@@ -58,6 +60,19 @@ namespace Serial
 	HAL_StatusTypeDef Println()
 	{
 		return Print("\r\n");
+	}
+	
+	template <uint16_t length = 255> 
+	HAL_StatusTypeDef Printf(const char *str, ...)
+	{
+		char buffer[length];
+		
+		va_list argptr;
+		va_start(argptr, str);
+		vsprintf(buffer, str, argptr);
+		va_end(argptr);
+		
+		return Print(buffer);
 	}
 	
 	HAL_StatusTypeDef _PrintNumber(uint32_t num, uint8_t radix)
