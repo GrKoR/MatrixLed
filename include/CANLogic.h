@@ -292,11 +292,10 @@ namespace CANLib
 		}
 		else
 		{
-			// TODO: 
-			// 1. Прочитать ID файла из пакета;
-			// 2. Загрузить слой ("customXXX.pxl");
-			// 3. Включить слой;
-			//Matrix::matrixObj.ShowLayer(1);
+			char filename[12];
+			sprintf(filename, "user%03d.pxl", can_frame.data[0]);
+			Matrix::matrixObj.RegLayer(filename, 1);
+			Matrix::matrixObj.ShowLayer(1);
 		}
 
 		can_frame.initialized = true;
