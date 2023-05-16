@@ -118,7 +118,7 @@ namespace CANLib
 	// TODO: this function has been put on hold.
 
 	// вызывается, если по CAN пришла команда включения/выключения габаритов
-	void side_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t side_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.side_beam.brightness = can_frame.data[0];
 
@@ -140,10 +140,12 @@ namespace CANLib
 		// TODO: может читать установленное значение с порта и его присваивать в can_frame.data[0]?
 		// читать вот этой функцией: HAL_GPIO_ReadPin(GPIOB, GPIO_PIN_9)
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения стоп-сигналов
-	void brake_light_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t brake_light_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.brake_light.brightness = can_frame.data[0];
 
@@ -163,10 +165,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения заднего хода
-	void reverse_light_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t reverse_light_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.reverse_light.brightness = can_frame.data[0];
 
@@ -186,10 +190,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения левого поворотника
-	void turn_left_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t turn_left_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.left_indicator.brightness = can_frame.data[0];
 
@@ -209,10 +215,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения правого поворотника
-	void turn_right_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t turn_right_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.right_indicator.brightness = can_frame.data[0];
 
@@ -232,10 +240,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения аварийного сигнала
-	void hazard_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t hazard_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.hazard_beam.brightness = can_frame.data[0];
 
@@ -257,10 +267,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения пользовательского света
-	void custom_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t custom_beam_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.custom_beam.brightness = can_frame.data[0];
 
@@ -278,10 +290,12 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	// вызывается, если по CAN пришла команда включения/выключения пользовательского изображения на панели
-	void custom_image_set_handler(can_frame_t &can_frame, can_error_t &error)
+	can_result_t custom_image_set_handler(can_frame_t &can_frame, can_error_t &error)
 	{
 		// light_ecu_can_data.custom_image.brightness = can_frame.data[0];
 
@@ -302,6 +316,8 @@ namespace CANLib
 		can_frame.function_id = CAN_FUNC_SET_OUT_OK;
 		// can_frame.data[0] doesn't change
 		can_frame.raw_data_length = 2;
+
+		return CAN_RESULT_CAN_FRAME;
 	}
 
 	inline void Setup()
