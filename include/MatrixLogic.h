@@ -381,16 +381,10 @@ inline void Loop(uint32_t &current_time)
 		
 		DMADraw();
 		
-		//Serial::Print("LogicTime: ");
-		//Serial::Print( (timer2 - timer1) );
-		//Serial::Println();
+		Serial::Printf("+INFO\tRenderTime: %d ms;\r\n", (timer2 - timer1));
 		
 		//Serial::Print("+SF-PXL=128,16,2\r\n");
 		//Serial::Print(frame_buffer_ptr, frame_buffer_len);
-		
-		//Serial::Print("LogicTime: ");
-		//Serial::Print( (timer2 - timer1) );
-		//Serial::Println();
 	}
 	
 	if( matrixObj.GetFrameIsDraw() == true && frame_buffer_idx == 0 )
@@ -398,7 +392,6 @@ inline void Loop(uint32_t &current_time)
 		matrixObj.SetFrameDrawEnd();
 	}
 	
-	// Обновляем текущее время, чтобы все последующий вызовы текущего loop получили его актуальным.
 	current_time = HAL_GetTick();
 	
 	return;

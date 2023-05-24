@@ -39,39 +39,24 @@ namespace Outputs
 		
 		return;
 	}
-
-	uint8_t port_idx = 0;
-	uint32_t last_time = 0;
-
+	
 	inline void Loop(uint32_t &current_time)
 	{
 		outObj.Processing(current_time);
-
+		
+		static uint32_t last_time = 0;
 		if(current_time - last_time > 250)
 		{
 			last_time = current_time;
-
-			if(++port_idx == 7) port_idx = 1;
-
-			for(uint8_t i = 1; i < 7; ++i)
+			
+			for(uint8_t i = 0; i < CFG_PortCount; ++i)
 			{
-				//if(port_idx == i) outObj.On(i);
-				//else outObj.Off(i);
-
-				Serial::Print("P");
-				Serial::Print((uint32_t)i);
-				Serial::Print(": ");
-				Serial::Print( (uint32_t)outObj.GetCurrent(i) );
-				Serial::Println();
+				Serial::Printf("+POUT\tport: %d, current: %5d;\r\n", i+1, outObj.GetCurrent(i+1));
 			}
-			Serial::Println();
-
 		}
 		
-		// Обновляем текущее время, чтобы все последующий вызовы текущего loop получили его актуальным.
 		current_time = HAL_GetTick();
 		
 		return;
 	}
-
 }
