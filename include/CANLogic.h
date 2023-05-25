@@ -5,7 +5,6 @@
 void HAL_CAN_Send(can_object_id_t id, uint8_t *data, uint8_t length);
 
 extern CAN_HandleTypeDef hcan;
-//extern UART_HandleTypeDef huart1;
 
 namespace CANLib
 {
@@ -349,7 +348,7 @@ namespace CANLib
 		can_manager.RegisterObject(obj_hazard_beam);
 		can_manager.RegisterObject(obj_custom_beam);
 		can_manager.RegisterObject(obj_custom_image);
-		
+
 		// Set versions data to block_info.
 		obj_block_info.SetValue(0, (About::board_type << 3 | About::board_ver), CAN_TIMER_TYPE_NORMAL);
 		obj_block_info.SetValue(1, (About::soft_ver << 2 | About::can_ver), CAN_TIMER_TYPE_NORMAL);

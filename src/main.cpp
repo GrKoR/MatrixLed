@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include "sd.h"
 #include <LoggerLibrary.h>
-//#include <SerialUtils.h>
 #include <About.h>
 #include <Leds.h>
 #include <MatrixLogic.h>
@@ -44,8 +43,6 @@ volatile uint16_t Timer1 = 0;
 
 // Flash related variables
 FATFS SDFatFs;
-
-//DebugSerial Logger;
 
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
@@ -76,7 +73,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 {
     uint32_t er = HAL_CAN_GetError(hcan);
-    //LOG("CAN ERROR: %lu %08lX", (unsigned long)er, (unsigned long)er);
 	DEBUG_LOG("CAN ERROR: %lu %08lX", (unsigned long)er, (unsigned long)er);
 }
 

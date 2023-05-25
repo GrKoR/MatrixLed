@@ -1,9 +1,5 @@
 #pragma once
 
-//#include <LoggerLibrary.h>
-
-//extern DebugSerial Logger;
-
 namespace About
 {
 	static constexpr char name[] = "BackLightECU";
