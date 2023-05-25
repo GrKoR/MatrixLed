@@ -380,10 +380,11 @@ inline void Loop(uint32_t &current_time)
 		matrixObj.SetFrameDrawStart();
 		
 		DMADraw();
+
+		//Serial::Printf("+INFO\tRenderTime: %d ms;\r\n", (timer2 - timer1));
+		Logger.PrintTopic("INFO").Printf("RenderTime: %d ms;", (timer2 - timer1)).PrintNewLine();
 		
-		Serial::Printf("+INFO\tRenderTime: %d ms;\r\n", (timer2 - timer1));
-		
-		//Serial::Print("+SF-PXL=128,16,2\r\n");
+		//Serial::Print("+PXL=128,16,2\r\n");
 		//Serial::Print(frame_buffer_ptr, frame_buffer_len);
 	}
 	

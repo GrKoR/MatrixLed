@@ -15,7 +15,7 @@
 #define CMD58 (0x40+58) // READ_OCR
 //--------------------------------------------------
 extern SPI_HandleTypeDef hspi2;
-extern UART_HandleTypeDef huart1;
+//extern UART_HandleTypeDef huart1;
 extern volatile uint16_t Timer1;
 sd_info_ptr sdinfo;
 char str1[60]={0};
