@@ -20,6 +20,7 @@ namespace Outputs
 	
 	inline void Setup()
 	{
+		#warning Move init to lib!
 		outObj.AddPort( {GPIOB, GPIO_PIN_11, ADC_CHANNEL_6} );
 		outObj.AddPort( {GPIOB, GPIO_PIN_10, ADC_CHANNEL_5} );
 		outObj.AddPort( {GPIOB, GPIO_PIN_2, ADC_CHANNEL_4} );
@@ -49,9 +50,9 @@ namespace Outputs
 		{
 			last_time = current_time;
 			
-			for(uint8_t i = 0; i < CFG_PortCount; ++i)
+			for(uint8_t i = 1; i < CFG_PortCount+1; ++i)
 			{
-				Serial::Printf("+POUT\tport: %d, current: %5d;\r\n", i+1, outObj.GetCurrent(i+1));
+				Logger.PrintTopic("POUT").Printf("Port: %d, current: %5d;", i, outObj.GetCurrent(i)).PrintNewLine();
 			}
 		}
 		

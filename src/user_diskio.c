@@ -39,7 +39,7 @@
 #include "sd.h"
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-extern UART_HandleTypeDef huart1;
+//extern UART_HandleTypeDef huart1;
 extern char str1[60];
 extern sd_info_ptr sdinfo;
 /* Private variables ---------------------------------------------------------*/
