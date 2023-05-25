@@ -96,3 +96,87 @@ namespace Serial
 	}
 
 }
+
+
+class DebugSerial
+{
+	public:
+		DebugSerial() = delete;
+		
+		DebugSerial(UART_HandleTypeDef *huart) : _huart(huart)
+		{
+			return;
+		}
+
+		DebugSerial& SetTopic(const char *topic)
+		{
+			_topic = topic;
+			_topic_print = true;
+			
+			return *this;
+		}
+		
+		DebugSerial& Print(const char *str)
+		{
+			if(_topic_print == true)
+			{
+				_HW_Print((uint8_t*)_topic, strlen(_topic));
+				_topic_print = false;
+			}
+			_HW_Print((uint8_t*)str, strlen(str));
+			
+			return *this;
+		}
+		
+		DebugSerial& Print(const uint8_t *str, uint16_t length)
+		{
+			if(_topic_print == true)
+			{
+				_HW_Print((uint8_t*)_topic, strlen(_topic));
+				_topic_print = false;
+			}
+			_HW_Print((uint8_t*)str, length);
+			
+			return *this;
+		}
+		
+		template <uint16_t length = 255> 
+		DebugSerial& Printf(const char *str, ...)
+		{
+			char buffer[length];
+			
+			va_list argptr; va_start(argptr, str); vsprintf(buffer, str, argptr); va_end(argptr);
+			
+			_HW_Print((uint8_t*)buffer, strlen(buffer));
+			
+			return *this;
+		}
+		
+		DebugSerial& NewLine()
+		{
+			_HW_Print((uint8_t*)_new_line_str, strlen(_new_line_str));
+			
+			return *this;
+		}
+		
+	private:
+		HAL_StatusTypeDef _HW_Print(uint8_t *pData, uint16_t Size)
+		{
+			HAL_StatusTypeDef result = HAL_UART_Transmit(_huart, pData, Size, 64);
+			if(result != HAL_OK)
+			{
+				HAL_UART_AbortTransmit(_huart);
+			}
+
+			return result;
+		}
+		
+		UART_HandleTypeDef *_huart;
+		
+		const char *_topic;
+		bool _topic_print;
+
+		const char _new_line_str[3] = "\r\n";
+};
+
+DebugSerial serial(&huart1);
