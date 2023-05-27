@@ -305,7 +305,7 @@ namespace CANLib
 		}
 		else
 		{
-			char filename[12];
+			char filename[13];
 			sprintf(filename, "user%03d.pxl", can_frame.data[0]);
 			Matrix::matrixObj.RegLayer(filename, 1);
 			Matrix::matrixObj.ShowLayer(1);

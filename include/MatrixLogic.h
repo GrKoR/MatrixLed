@@ -340,14 +340,7 @@ inline void Setup()
 	//matrixObj.ShowLayer(5);
 	//matrixObj.ShowLayer(6);
 	//matrixObj.ShowLayer(7);
-
-	//matrixObj.RegLayer("f1.pxl", 1);
-	//matrixObj.RegLayer("f2.pxl", 2);
-	//matrixObj.RegLayer("f3.pxl", 0);
-	//matrixObj.ShowLayer(0);
-	//matrixObj.ShowLayer(1);
-	//matrixObj.ShowLayer(2);
-
+	
 	matrixObj.SetBrightness(10);
 	
 	matrixObj.GetFrameBuffer(frame_buffer_ptr, frame_buffer_len);
