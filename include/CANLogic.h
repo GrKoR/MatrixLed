@@ -359,11 +359,10 @@ namespace CANLib
 	inline void Loop(uint32_t &current_time)
 	{
 		can_manager.Process(current_time);
-
-		//*************************************************************
-		// TODO: CANManager experiments
+		
+		// Set uptime to block_info.
 		static uint32_t iter = 0;
-		if (current_time - iter > 1000)
+		if(current_time - iter > 1000)
 		{
 			iter = current_time;
 
@@ -373,8 +372,7 @@ namespace CANLib
 			obj_block_info.SetValue(4, data[2], CAN_TIMER_TYPE_NORMAL);
 			obj_block_info.SetValue(5, data[3], CAN_TIMER_TYPE_NORMAL);
 		}
-		//*************************************************************
-
+		
 		current_time = HAL_GetTick();
 
 		return;
