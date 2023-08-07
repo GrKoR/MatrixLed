@@ -10,11 +10,12 @@ namespace Matrix
 {
 
 	/* Настройки */
-	static constexpr uint8_t CFG_Layers = 8;	// Кол-во слоёв анимации.
-	static constexpr uint8_t CFG_Width = 128;	// Ширина экрана.
-	static constexpr uint8_t CFG_Height = 16;	// Высота экрана.
-	static constexpr uint16_t CFG_Delay = 200;	// Интервал обновления экрана.
-	#define ROOT_DIRECTORY ("/led_pxl_r")		// Папка с файлами pxl.
+	static constexpr uint8_t CFG_Layers = 8;		// Кол-во слоёв анимации.
+	static constexpr uint8_t CFG_Width = 128;		// Ширина экрана.
+	static constexpr uint8_t CFG_Height = 16;		// Высота экрана.
+	static constexpr uint16_t CFG_Delay = 200;		// Интервал обновления экрана.
+	static constexpr uint8_t CFG_Brightness = 10;	// Яркость матрицы.
+	#define ROOT_DIRECTORY ("/led_pxl_r")			// Папка с файлами pxl.
 	/* */
 	
 	MatrixLed<CFG_Layers, CFG_Width, CFG_Height> matrixObj(CFG_Delay);
@@ -341,7 +342,7 @@ inline void Setup()
 	//matrixObj.ShowLayer(6);
 	//matrixObj.ShowLayer(7);
 	
-	matrixObj.SetBrightness(10);
+	matrixObj.SetBrightness(CFG_Brightness);
 	
 	matrixObj.GetFrameBuffer(frame_buffer_ptr, frame_buffer_len);
 

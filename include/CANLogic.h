@@ -37,26 +37,26 @@ namespace CANLib
 	// request | timer:15000
 	// byte	1 + 7	{ type[0] data[1..7] }
 	// Основная информация о блоке. См. "Системные параметры".
-	CANObject<uint8_t, 7> obj_block_info(0x00E0, 15000, 300, true);
+	CANObject<uint8_t, 7> obj_block_info(0x00E0);
 
 	// 0x00E1	BlockHealth
 	// request | event
 	// byte	1 + 7	{ type[0] data[1..7] }
 	// Информация о здоровье блока. См. "Системные параметры".
-	CANObject<uint8_t, 7> obj_block_health(0x00E1, CAN_TIMER_DISABLED, 300);
+	CANObject<uint8_t, 7> obj_block_health(0x00E1);
 
 	// 0x00E2	BlockCfg
 	// request
 	// byte	1 + 1 + X	{ type[0] param[1] data[2..7] }
 	// Чтение и запись настроек блока. См. "Системные параметры".
-	CANObject<uint8_t, 7> obj_block_cfg(0x00E2, CAN_TIMER_DISABLED, CAN_ERROR_DISABLED);
+	CANObject<uint8_t, 7> obj_block_features(0x00E2);
 
 
 	// 0x00E3	BlockError
 	// request | event
 	// byte	1 + X	{ type[0] data[1..7] }
 	// Ошибки блока. См. "Системные параметры".
-	CANObject<uint8_t, 7> obj_block_error(0x00E3, CAN_TIMER_DISABLED, 300);
+	CANObject<uint8_t, 7> obj_block_error(0x00E3);
 
 	// ******************** specific blocks ********************
 
@@ -326,9 +326,6 @@ namespace CANLib
 
 	inline void Setup()
 	{
-		// set CAN data structure to zero
-		// memset(&light_ecu_can_data, 0, sizeof(light_ecu_can_data));
-
 		obj_side_beam.RegisterFunctionSet(&side_beam_set_handler);
 		obj_brake_light.RegisterFunctionSet(&brake_light_set_handler);
 		obj_reverse_light.RegisterFunctionSet(&reverse_light_set_handler);
@@ -338,10 +335,16 @@ namespace CANLib
 		obj_custom_beam.RegisterFunctionSet(&custom_beam_set_handler);
 		obj_custom_image.RegisterFunctionSet(&custom_image_set_handler);
 
+		// system blocks
+		set_block_info_params(obj_block_info);
+		set_block_health_params(obj_block_health);
+		set_block_features_params(obj_block_features);
+		set_block_error_params(obj_block_error);
+
 		// common blocks
 		can_manager.RegisterObject(obj_block_info);
 		can_manager.RegisterObject(obj_block_health);
-		can_manager.RegisterObject(obj_block_cfg);
+		can_manager.RegisterObject(obj_block_features);
 		can_manager.RegisterObject(obj_block_error);
 
 		// specific blocks
