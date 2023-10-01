@@ -306,7 +306,9 @@ namespace CANLib
 		// if (light_ecu_can_data.custom_image.brightness == 0)
 		if (can_frame.data[0] == 0)
 		{
-			Matrix::matrixObj.HideLayer(1);
+			//Matrix::matrixObj.HideLayer(1);
+			Matrix::matrixObj.RegLayer("layer1.pxl", 1);
+			Matrix::matrixObj.ShowLayer(1);
 		}
 		else
 		{
