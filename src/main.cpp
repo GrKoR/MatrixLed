@@ -116,9 +116,12 @@ void InitFlash()
     disk_initialize(SDFatFs.drv);
 
     // f_mount(&SDFatFs, "", 0);
-    if (f_mount(&SDFatFs, "", 1) != FR_OK)
+	FRESULT mount_res = f_mount(&SDFatFs, "", 1);
+    if (mount_res != FR_OK)
     {
         Leds::obj.SetOn(Leds::LED_RED, 250, 250);
+
+		DEBUG_LOG("SD ERROR: %d", mount_res);
     }
     /*
     else
@@ -207,6 +210,42 @@ int main(void)
     Matrix::Setup();
     Outputs::Setup();
 
+	//---------------------------------
+
+/*
+	DWORD free_sectors, total_sectors;
+	// получаем информацию о свободном пространстве на диске
+	//f_getfree("", &free_clusters, &SDFatFs);
+
+
+
+
+DEBUG_LOG_TOPIC("aaa", "last_clust: %ld, free_clust: %ld, csize: %ld, fsize: %ld, n_fatent: %ld\n", SDFatFs.last_clust, SDFatFs.free_clust, SDFatFs.csize, SDFatFs.fsize, SDFatFs.n_fatent);
+
+	// вычисляем адрес начала не размеченной области
+	free_sectors = SDFatFs.free_clust * SDFatFs.csize;
+	total_sectors = (SDFatFs.n_fatent - 2) * SDFatFs.csize;
+	DWORD unallocated_sectors = (total_sectors - free_sectors);
+	
+	DEBUG_LOG_TOPIC("aaa", "unallocated_sectors: %ld\n", unallocated_sectors);
+
+	uint8_t buffer_test[512];
+	for(int i=0; i<512; i++)
+	{
+		buffer_test[i] = i;
+	}
+	disk_write(SDFatFs.drv, buffer_test, 524416, 1);
+
+	memset(buffer_test, 0x00, sizeof(buffer_test));
+
+	disk_read(SDFatFs.drv, buffer_test, 524416, 1);
+	DEBUG_LOG_STR("SD", "\n\n");
+	DEBUG_LOG_ARRAY_HEX("SD", buffer_test, sizeof(buffer_test));
+	DEBUG_LOG_STR("SD", "\n\n");
+*/
+
+	//---------------------------------
+
     uint32_t current_time = HAL_GetTick();
     while (1)
     {
@@ -271,8 +310,6 @@ void SystemClock_Config(void)
  */
 static void MX_ADC1_Init(void)
 {
-    ADC_ChannelConfTypeDef sConfig = {0};
-
     /* Common config */
     hadc1.Instance = ADC1;
     hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
@@ -282,14 +319,6 @@ static void MX_ADC1_Init(void)
     hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
     hadc1.Init.NbrOfConversion = 1;
     if (HAL_ADC_Init(&hadc1) != HAL_OK)
-    {
-        Error_Handler();
-    }
-    /* Configure Regular Channel */
-    sConfig.Channel = ADC_CHANNEL_1;
-    sConfig.Rank = ADC_REGULAR_RANK_1;
-    sConfig.SamplingTime = ADC_SAMPLETIME_1CYCLE_5;
-    if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
     {
         Error_Handler();
     }
@@ -504,56 +533,75 @@ static void MX_GPIO_Init(void)
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_15, GPIO_PIN_RESET);
+   // HAL_GPIO_WritePin(GPIOC, GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15, GPIO_PIN_RESET);
 
     /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
+    //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_15, GPIO_PIN_RESET);
+
+    /*Configure GPIO pin Output Level */
+    //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
 
     /*Configure GPIO pins : PC13 PC14 PC15 */
-    GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+    //GPIO_InitStruct.Pin = GPIO_PIN_13 | GPIO_PIN_14 | GPIO_PIN_15;
+    //GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    //GPIO_InitStruct.Pull = GPIO_NOPULL;
+    //GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    //HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
     /*Configure GPIO pins : PA7 PA15 */
-    GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_15;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+    //GPIO_InitStruct.Pin = GPIO_PIN_7 | GPIO_PIN_15;
+    //GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    //GPIO_InitStruct.Pull = GPIO_NOPULL;
+    //GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    //HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /*Configure GPIO pins : PB0 PB1 PB2 PB10
                              PB11 PB12 PB3 PB4
                              PB5 PB6 */
-    GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
+    //GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_10 | GPIO_PIN_11 | GPIO_PIN_12 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
+    //GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    //GPIO_InitStruct.Pull = GPIO_NOPULL;
+    //GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    //HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : PA8 */
+    //GPIO_InitStruct.Pin = GPIO_PIN_8;
+    //GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    //GPIO_InitStruct.Pull = GPIO_NOPULL;
+    //GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    //HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    /*Configure GPIO pin : PB7 */
+    //GPIO_InitStruct.Pin = GPIO_PIN_7;
+    //GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    //GPIO_InitStruct.Pull = GPIO_NOPULL;
+    //HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+    /*Configure GPIO pins : PB8 PB9 */
+    //GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
+    //GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    //GPIO_InitStruct.Pull = GPIO_PULLUP;
+    //HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_15, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_12, GPIO_PIN_RESET);
+
+    /*Configure GPIO pins : PA7 PA15 */
+    GPIO_InitStruct.Pin = GPIO_PIN_15;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+    GPIO_InitStruct.Pin = GPIO_PIN_12;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
-    /*Configure GPIO pin : PA8 */
-    GPIO_InitStruct.Pin = GPIO_PIN_8;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /*Configure GPIO pin : PB7 */
-    GPIO_InitStruct.Pin = GPIO_PIN_7;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    /*Configure GPIO pins : PB8 PB9 */
-    GPIO_InitStruct.Pin = GPIO_PIN_8 | GPIO_PIN_9;
-    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
