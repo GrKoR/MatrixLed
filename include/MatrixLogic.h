@@ -15,7 +15,7 @@ namespace Matrix
 	static constexpr uint8_t CFG_Height = 16;		// Высота экрана.
 	static constexpr uint16_t CFG_Delay = 200;		// Интервал обновления экрана.
 	static constexpr uint8_t CFG_Brightness = 10;	// Яркость матрицы.
-	#define ROOT_DIRECTORY ("/led_pxl_r")			// Папка с файлами pxl.
+	#define ROOT_DIRECTORY ("/pxl_r")				// Папка с файлами pxl.
 	/* */
 	
 	MatrixLed<CFG_Layers, CFG_Width, CFG_Height> matrixObj(CFG_Delay);
