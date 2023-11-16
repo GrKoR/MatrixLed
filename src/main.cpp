@@ -118,12 +118,12 @@ void InitFlash()
 
     // f_mount(&SDFatFs, "", 0);
 	FRESULT mount_res = f_mount(&SDFatFs, "", 1);
-    if (mount_res != FR_OK)
-    {
-        Leds::obj.SetOn(Leds::LED_RED, 250, 250);
+	if(mount_res != FR_OK)
+	{
+		Leds::obj.SetOn(Leds::LED_RED, 250, 250);
 		
 		Logger.PrintTopic("SD").Printf("Init error, code: %d", mount_res).PrintNewLine();
-    }
+	}
     /*
     else
     {

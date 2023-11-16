@@ -2,5 +2,6 @@
 	"cmake.configureOnOpen": false,
 	"CodeGPT.query.language": "Russian",
 	"git.autoRepositoryDetection": "openEditors",
-	"git.openRepositoryInParentFolders": "always"
+	"git.openRepositoryInParentFolders": "always",
+	"CodeGPT.model": "gpt-3.5-turbo"
 }
