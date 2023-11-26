@@ -23,7 +23,8 @@ sd_info_ptr sdinfo;
 char str1[60]={0};
 
 
-__attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast2(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+/*
+__attribute__((optimize("-Ofast"))) void HAL_SPI_ReadFast2(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
 {
 	SPI_TypeDef *SPIx= hspi->Instance;
 	uint16_t count=Size;
@@ -47,7 +48,7 @@ __attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast2(SPI_HandleTypeDef 
 		//{
 			*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
 		//} else {
-			/* Handle error */
+			//Handle error
 		//	break;
 		//}
 	}
@@ -56,15 +57,14 @@ __attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast2(SPI_HandleTypeDef 
 	
 	return;
 }
+*/
 
-
-__attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+/*__attribute__((optimize("-Ofast"))) */void HAL_SPI_ReadFast(SPI_HandleTypeDef *hspi, uint8_t *pRxData, __IO uint16_t Size, uint32_t Timeout)
 {
 	SPI_TypeDef *SPIx= hspi->Instance;
 	uint32_t tickstart = HAL_GetTick();
 	
 	__HAL_SPI_ENABLE(hspi);
-	
 	while(Size--)
 	{
 		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
@@ -78,6 +78,39 @@ __attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast(SPI_HandleTypeDef *
 			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
 		}
 		*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
+	}
+	
+	exit:
+	
+	return;
+}
+
+
+
+/*
+	Фиктивная отправка данных.
+	Предназначена для генерации CLK сигнала нужное кол-во раз.
+*/
+/*__attribute__((optimize("-Ofast"))) */void HAL_SPI_WriteFast(SPI_HandleTypeDef *hspi, uint8_t *pTxData, __IO uint16_t Size, uint32_t Timeout)
+{
+	SPI_TypeDef *SPIx= hspi->Instance;
+	uint32_t tickstart = HAL_GetTick();
+	uint8_t RXdummy;
+	
+	__HAL_SPI_ENABLE(hspi);
+	while(Size--)
+	{
+		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*(__IO uint8_t *)&SPIx->DR = *pTxData++;
+
+		while( (SPIx->SR & SPI_FLAG_RXNE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		RXdummy = *(__IO uint8_t *)&SPIx->DR;
 	}
 	
 	exit:
@@ -115,62 +148,67 @@ uint8_t SPI_ReceiveByte(void)
   return bt;
 }
 //-----------------------------------------------
-void SPI_Release(void)
+inline void SPI_Release(void)
 {
-  SPIx_WriteRead(0xFF);
+  //SPIx_WriteRead(0xFF);
+  uint8_t data[1] = {0xFF};
+  HAL_SPI_WriteFast(&hspi2, data, 1, 100);
 }
 //-----------------------------------------------
-uint8_t SPI_wait_ready(void)
+uint8_t SPI_wait_ready(uint8_t neq, uint8_t *result)
 {
-  uint8_t res;
-  uint16_t cnt;
-  cnt=0;
-  do { //���� ��������� ��������� BUSY
-    res=SPI_ReceiveByte();
-    cnt++;
-  } while ( (res!=0xFF)&&(cnt<0xFFFF) );
-  if (cnt>=0xFFFF) return 1;
-  return res;
+	uint16_t cnt = 0;
+	
+	do {
+		HAL_SPI_ReadFast(&hspi2, result, 1, 100);
+	} while ( *result != neq && ++cnt < 0xFFFF );
+	
+	return (cnt == 0xFFFF) ? 0 : 1;
 }
 //-----------------------------------------------
-static uint8_t SD_cmd (uint8_t cmd, uint32_t arg)
+
+uint8_t SD_cmd(uint8_t cmd, uint32_t arg)
 {
-  uint8_t n, res;
+	uint8_t result;
+	uint16_t cnt = 0;
+	uint8_t rxtxbuff[6];
+	
 	// ACMD<n> is the command sequense of CMD55-CMD<n>
-	if (cmd & 0x80)
+	if(cmd & 0x80)
 	{
 		cmd &= 0x7F;
-		res = SD_cmd(CMD55, 0);
-		if (res > 1) return res;
+		result = SD_cmd(CMD55, 0);
+		if(result > 1) return result;
 	}
+	
 	// Select the card
-	SS_SD_DESELECT();
-	SPI_ReceiveByte();
-	SS_SD_SELECT();
-	SPI_ReceiveByte();
+	HAL_SPI_ReadFast(&hspi2, rxtxbuff, 2, 100);
+	
+	cnt = 0x01;							// Dummy CRC + Stop
+	if(cmd == CMD0) { cnt = 0x95; }		// Valid CRC for CMD0(0)
+	if(cmd == CMD8) { cnt = 0x87; }		// Valid CRC for CMD8(0x1AA)
+	
 	// Send a command packet
-	SPI_SendByte(cmd); // Start + Command index
-	SPI_SendByte((uint8_t)(arg >> 24)); // Argument[31..24]
-	SPI_SendByte((uint8_t)(arg >> 16)); // Argument[23..16]
-	SPI_SendByte((uint8_t)(arg >> 8)); // Argument[15..8]
-	SPI_SendByte((uint8_t)arg); // Argument[7..0]
-	n = 0x01; // Dummy CRC + Stop
-	if (cmd == CMD0) {n = 0x95;} // Valid CRC for CMD0(0)
-	if (cmd == CMD8) {n = 0x87;} // Valid CRC for CMD8(0x1AA)
-	SPI_SendByte(n);	
-  // Receive a command response
-  n = 10; // Wait for a valid response in timeout of 10 attempts
-  do {
-    res = SPI_ReceiveByte();
-  } while ((res & 0x80) && --n);
-  return res;
+	rxtxbuff[0] = cmd;
+	arg = __builtin_bswap32(arg);
+	memcpy(rxtxbuff+1, &arg, 4);
+	rxtxbuff[5] = cnt;
+	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 6, 1000);
+	
+	// Receive a command response
+	cnt = 100;
+	do {
+		HAL_SPI_ReadFast(&hspi2, rxtxbuff, 1, 100);
+	} while ( (rxtxbuff[0] & 0x80) && --cnt);
+	
+	return rxtxbuff[0];
 }
 //-----------------------------------------------
 void SD_PowerOn(void)
 {
-  Timer1 = 0;
-  while(Timer1<2) //��� 20 ����������, ��� ����, ����� ���������� �����������������
-    ;
+ // Timer1 = 0;
+ // while(Timer1<2) //��� 20 ����������, ��� ����, ����� ���������� �����������������
+ // ;
 }
 //-----------------------------------------------
 
@@ -179,30 +217,25 @@ void SD_PowerOn(void)
 
 uint8_t SD_Read_Block(uint8_t *buff, uint32_t lba)
 {
-	uint8_t result;
-	uint16_t cnt = 0;
 	static const uint16_t block_size = 512U;
 	
+	uint8_t result;
+	uint8_t rxtxbuff[2] = {0xFF, 0xFF};
+	
+	// Отправляем команду CMD18 (READ_MULTIPLE_BLOCK)
 	result = SD_cmd(CMD18, lba);
 	if(result != 0x00) return 5;
-	SPI_Release();
+	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 1, 100); // Но по факту Read, но я не понимаю зачем это тут.
 	
-	do
-	{
-		result = SPI_ReceiveByte();
-		cnt++;
-	} while ( result != 0xFE && cnt < 0xFFFF );
-	if(cnt == 0xFFFF) return 5;
+	// Ждём подтвержение
+	if( SPI_wait_ready(0xFE, &result) == 0 ) return 5;
 	
-	//for(cnt = 0; cnt < 512; cnt++) buff[cnt] = SPI_ReceiveByte();
-	//SD_cmd(CMD12, 0x00000000);
-
-	//memset(buff, 0xFF, block_size);
-	HAL_SPI_ReceiveFast(&hspi2, buff, block_size, 0x1000);
+	// Читаем 512 байт и отправляем CMD12 (STOP_TRANSMISSION)
+	HAL_SPI_ReadFast(&hspi2, buff, block_size, 1000);
 	SD_cmd(CMD12, 0x00000000);
 	
-	SPI_Release();
-	SPI_Release();
+	// Игнорируем контрольную сумму?
+	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 2, 100); // Но по факту Read, но я не понимаю зачем это тут.
 	
 	return 0;
 }
