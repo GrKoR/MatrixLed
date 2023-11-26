@@ -13,12 +13,81 @@
 #define CMD24 (0x40+24) // WRITE_BLOCK
 #define CMD55 (0x40+55) // APP_CMD
 #define CMD58 (0x40+58) // READ_OCR
+#define CMD12 (0x40+12) // STOP_TRANSMISSION
+#define CMD18 (0x40+18) // READ_MULTIPLE_BLOCK
 //--------------------------------------------------
 extern SPI_HandleTypeDef hspi2;
 //extern UART_HandleTypeDef huart1;
 extern volatile uint16_t Timer1;
 sd_info_ptr sdinfo;
 char str1[60]={0};
+
+
+__attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast2(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+{
+	SPI_TypeDef *SPIx= hspi->Instance;
+	uint16_t count=Size;
+	uint32_t tickstart = HAL_GetTick();
+	
+	__HAL_SPI_ENABLE(hspi);
+	
+	while (count--)
+	{
+		while( (SPIx->SR & SPI_FLAG_TXE) == 0 || (SPIx->SR & SPI_FLAG_BSY) )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*(__IO uint8_t *)&SPIx->DR = 0xFF;
+		
+		while( (SPIx->SR & SPI_FLAG_RXNE) == 0 || (SPIx->SR & SPI_FLAG_BSY) )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		//if( (SPIx->SR & SPI_FLAG_OVR) == 0 && (SPIx->SR & SPI_FLAG_MODF) == 0 )
+		//{
+			*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
+		//} else {
+			/* Handle error */
+		//	break;
+		//}
+	}
+
+	exit :
+	
+	return;
+}
+
+
+__attribute__((optimize("-Ofast"))) void HAL_SPI_ReceiveFast(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+{
+	SPI_TypeDef *SPIx= hspi->Instance;
+	uint32_t tickstart = HAL_GetTick();
+	
+	__HAL_SPI_ENABLE(hspi);
+	
+	while(Size--)
+	{
+		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*(__IO uint8_t *)&SPIx->DR = 0xFF;
+		
+		while( (SPIx->SR & SPI_FLAG_RXNE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
+	}
+	
+	exit:
+	
+	return;
+}
+
+
+
+
 //--------------------------------------------------
 static void Error (void)
 {
@@ -104,23 +173,38 @@ void SD_PowerOn(void)
     ;
 }
 //-----------------------------------------------
-uint8_t SD_Read_Block (uint8_t *buff, uint32_t lba)
+
+// http://chlazza.nfshost.com/sdcardinfo.html
+// https://www.st.com/resource/en/application_note/an5595-spc58xexspc58xgx-multimedia-card-via-spi-interface-stmicroelectronics.pdf
+
+uint8_t SD_Read_Block(uint8_t *buff, uint32_t lba)
 {
-  uint8_t result;
-  uint16_t cnt;
-	result=SD_cmd (CMD17, lba); //CMD17 ������� ��� 50 � 96
-	if (result!=0x00) return 5; //�����, ���� ��������� �� 0x00
-	  SPI_Release();
-  cnt=0;
-  do{ //���� ������ �����
-    result=SPI_ReceiveByte();
-    cnt++;
-  } while ( (result!=0xFE)&&(cnt<0xFFFF) );
-  if (cnt>=0xFFFF) return 5;
-  for (cnt=0;cnt<512;cnt++) buff[cnt]=SPI_ReceiveByte(); //�������� ����� ����� �� ���� � �����
-  SPI_Release(); //���������� ����������� �����
-  SPI_Release();
-  return 0;
+	uint8_t result;
+	uint16_t cnt = 0;
+	static const uint16_t block_size = 512U;
+	
+	result = SD_cmd(CMD18, lba);
+	if(result != 0x00) return 5;
+	SPI_Release();
+	
+	do
+	{
+		result = SPI_ReceiveByte();
+		cnt++;
+	} while ( result != 0xFE && cnt < 0xFFFF );
+	if(cnt == 0xFFFF) return 5;
+	
+	//for(cnt = 0; cnt < 512; cnt++) buff[cnt] = SPI_ReceiveByte();
+	//SD_cmd(CMD12, 0x00000000);
+
+	//memset(buff, 0xFF, block_size);
+	HAL_SPI_ReceiveFast(&hspi2, buff, block_size, 0x1000);
+	SD_cmd(CMD12, 0x00000000);
+	
+	SPI_Release();
+	SPI_Release();
+	
+	return 0;
 }
 //-----------------------------------------------
 uint8_t SD_Write_Block (uint8_t *buff, uint32_t lba)
