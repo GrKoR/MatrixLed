@@ -5,6 +5,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#pragma GCC optimize("-Ofast")
+
 //--------------------------------------------------
 #define CS_SD_GPIO_PORT GPIOA
 #define CS_SD_PIN GPIO_PIN_8

@@ -1,70 +1,39 @@
 #include "sd.h"
 #include <stdio.h>
 #include <string.h>
+
 //--------------------------------------------------
 // Definitions for MMC/SDC command
-#define CMD0 (0x40+0) // GO_IDLE_STATE
-#define CMD1 (0x40+1) // SEND_OP_COND (MMC)
-#define ACMD41 (0xC0+41) // SEND_OP_COND (SDC)
-#define CMD8 (0x40+8) // SEND_IF_COND
-#define CMD9 (0x40+9) // SEND_CSD
-#define CMD16 (0x40+16) // SET_BLOCKLEN
-#define CMD17 (0x40+17) // READ_SINGLE_BLOCK
-#define CMD24 (0x40+24) // WRITE_BLOCK
-#define CMD55 (0x40+55) // APP_CMD
-#define CMD58 (0x40+58) // READ_OCR
-#define CMD12 (0x40+12) // STOP_TRANSMISSION
-#define CMD18 (0x40+18) // READ_MULTIPLE_BLOCK
+#define CMD0	(0x40+0)	// GO_IDLE_STATE
+#define CMD1	(0x40+1)	// SEND_OP_COND (MMC)
+#define CMD8	(0x40+8)	// SEND_IF_COND
+#define CMD9	(0x40+9)	// SEND_CSD
+#define CMD12	(0x40+12)	// STOP_TRANSMISSION
+#define CMD16	(0x40+16)	// SET_BLOCKLEN
+#define CMD17	(0x40+17)	// READ_SINGLE_BLOCK
+#define CMD18	(0x40+18)	// READ_MULTIPLE_BLOCK
+#define CMD24	(0x40+24)	// WRITE_BLOCK
+#define CMD55	(0x40+55)	// APP_CMD
+#define CMD58	(0x40+58)	// READ_OCR
+#define ACMD41	(0xC0+41)	// SEND_OP_COND (SDC)
 //--------------------------------------------------
 extern SPI_HandleTypeDef hspi2;
 //extern UART_HandleTypeDef huart1;
-extern volatile uint16_t Timer1;
 sd_info_ptr sdinfo;
 char str1[60]={0};
 
+SPI_HandleTypeDef *hspi_obj = &hspi2;
 
-/*
-__attribute__((optimize("-Ofast"))) void HAL_SPI_ReadFast2(SPI_HandleTypeDef *hspi, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
+
+
+
+
+void HAL_SPI_ReadFast(uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
 {
-	SPI_TypeDef *SPIx= hspi->Instance;
-	uint16_t count=Size;
+	SPI_TypeDef *SPIx= hspi_obj->Instance;
 	uint32_t tickstart = HAL_GetTick();
 	
-	__HAL_SPI_ENABLE(hspi);
-	
-	while (count--)
-	{
-		while( (SPIx->SR & SPI_FLAG_TXE) == 0 || (SPIx->SR & SPI_FLAG_BSY) )
-		{
-			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
-		}
-		*(__IO uint8_t *)&SPIx->DR = 0xFF;
-		
-		while( (SPIx->SR & SPI_FLAG_RXNE) == 0 || (SPIx->SR & SPI_FLAG_BSY) )
-		{
-			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
-		}
-		//if( (SPIx->SR & SPI_FLAG_OVR) == 0 && (SPIx->SR & SPI_FLAG_MODF) == 0 )
-		//{
-			*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
-		//} else {
-			//Handle error
-		//	break;
-		//}
-	}
-
-	exit :
-	
-	return;
-}
-*/
-
-/*__attribute__((optimize("-Ofast"))) */void HAL_SPI_ReadFast(SPI_HandleTypeDef *hspi, uint8_t *pRxData, __IO uint16_t Size, uint32_t Timeout)
-{
-	SPI_TypeDef *SPIx= hspi->Instance;
-	uint32_t tickstart = HAL_GetTick();
-	
-	__HAL_SPI_ENABLE(hspi);
+	__HAL_SPI_ENABLE(hspi_obj);
 	while(Size--)
 	{
 		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
@@ -85,19 +54,13 @@ __attribute__((optimize("-Ofast"))) void HAL_SPI_ReadFast2(SPI_HandleTypeDef *hs
 	return;
 }
 
-
-
-/*
-	Фиктивная отправка данных.
-	Предназначена для генерации CLK сигнала нужное кол-во раз.
-*/
-/*__attribute__((optimize("-Ofast"))) */void HAL_SPI_WriteFast(SPI_HandleTypeDef *hspi, uint8_t *pTxData, __IO uint16_t Size, uint32_t Timeout)
+void HAL_SPI_WriteFast(uint8_t *pTxData, uint16_t Size, uint32_t Timeout)
 {
-	SPI_TypeDef *SPIx= hspi->Instance;
+	SPI_TypeDef *SPIx= hspi_obj->Instance;
 	uint32_t tickstart = HAL_GetTick();
 	uint8_t RXdummy;
 	
-	__HAL_SPI_ENABLE(hspi);
+	__HAL_SPI_ENABLE(hspi_obj);
 	while(Size--)
 	{
 		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
@@ -118,54 +81,79 @@ __attribute__((optimize("-Ofast"))) void HAL_SPI_ReadFast2(SPI_HandleTypeDef *hs
 	return;
 }
 
-
-
-
-//--------------------------------------------------
-static void Error (void)
+void HAL_SPI_WriteReadFast(uint8_t *pTxData, uint8_t *pRxData, uint16_t Size, uint32_t Timeout)
 {
+	SPI_TypeDef *SPIx= hspi_obj->Instance;
+	uint32_t tickstart = HAL_GetTick();
+
+	__HAL_SPI_ENABLE(hspi_obj);
+	while(Size--)
+	{
+		while( (SPIx->SR & SPI_FLAG_TXE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*(__IO uint8_t *)&SPIx->DR = *pTxData++;
+
+		while( (SPIx->SR & SPI_FLAG_RXNE) == 0 )
+		{
+			if( (HAL_GetTick() - tickstart) >= Timeout ) goto exit;
+		}
+		*pRxData++ = *(__IO uint8_t *)&SPIx->DR;
+	}
 	
+	exit:
+	
+	return;
 }
+
+
+
+
+
+
 //-----------------------------------------------
 uint8_t SPIx_WriteRead(uint8_t Byte)
 {
   uint8_t receivedbyte = 0;
-  if(HAL_SPI_TransmitReceive(&hspi2,(uint8_t*) &Byte,(uint8_t*) &receivedbyte,1,0x1000)!=HAL_OK)
-  {
-    Error();
-  }
+  //if(HAL_SPI_TransmitReceive(hspi_obj,(uint8_t*) &Byte,(uint8_t*) &receivedbyte,1,0x1000)!=HAL_OK)
+  //{
+  //  //Error();
+  //}
+  HAL_SPI_WriteReadFast((uint8_t *)&Byte, (uint8_t *)&receivedbyte, 1, 1000);
+  
   return receivedbyte;
 }
-//-----------------------------------------------
+
 void SPI_SendByte(uint8_t bt)
 {
   SPIx_WriteRead(bt);
 }
-//-----------------------------------------------
+
 uint8_t SPI_ReceiveByte(void)
 {
   uint8_t bt = SPIx_WriteRead(0xFF);
   return bt;
 }
-//-----------------------------------------------
+
 inline void SPI_Release(void)
 {
   //SPIx_WriteRead(0xFF);
   uint8_t data[1] = {0xFF};
-  HAL_SPI_WriteFast(&hspi2, data, 1, 100);
+  HAL_SPI_WriteFast(data, 1, 100);
 }
 //-----------------------------------------------
+
 uint8_t SPI_wait_ready(uint8_t neq, uint8_t *result)
 {
 	uint16_t cnt = 0;
 	
 	do {
-		HAL_SPI_ReadFast(&hspi2, result, 1, 100);
+		HAL_SPI_ReadFast(result, 1, 100);
 	} while ( *result != neq && ++cnt < 0xFFFF );
 	
 	return (cnt == 0xFFFF) ? 0 : 1;
 }
-//-----------------------------------------------
 
 uint8_t SD_cmd(uint8_t cmd, uint32_t arg)
 {
@@ -182,7 +170,7 @@ uint8_t SD_cmd(uint8_t cmd, uint32_t arg)
 	}
 	
 	// Select the card
-	HAL_SPI_ReadFast(&hspi2, rxtxbuff, 2, 100);
+	HAL_SPI_ReadFast(rxtxbuff, 2, 100);
 	
 	cnt = 0x01;							// Dummy CRC + Stop
 	if(cmd == CMD0) { cnt = 0x95; }		// Valid CRC for CMD0(0)
@@ -193,16 +181,17 @@ uint8_t SD_cmd(uint8_t cmd, uint32_t arg)
 	arg = __builtin_bswap32(arg);
 	memcpy(rxtxbuff+1, &arg, 4);
 	rxtxbuff[5] = cnt;
-	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 6, 1000);
+	HAL_SPI_WriteFast(rxtxbuff, 6, 1000);
 	
 	// Receive a command response
 	cnt = 100;
 	do {
-		HAL_SPI_ReadFast(&hspi2, rxtxbuff, 1, 100);
+		HAL_SPI_ReadFast(rxtxbuff, 1, 100);
 	} while ( (rxtxbuff[0] & 0x80) && --cnt);
 	
 	return rxtxbuff[0];
 }
+
 //-----------------------------------------------
 void SD_PowerOn(void)
 {
@@ -211,6 +200,7 @@ void SD_PowerOn(void)
  // ;
 }
 //-----------------------------------------------
+
 
 // http://chlazza.nfshost.com/sdcardinfo.html
 // https://www.st.com/resource/en/application_note/an5595-spc58xexspc58xgx-multimedia-card-via-spi-interface-stmicroelectronics.pdf
@@ -225,21 +215,21 @@ uint8_t SD_Read_Block(uint8_t *buff, uint32_t lba)
 	// Отправляем команду CMD18 (READ_MULTIPLE_BLOCK)
 	result = SD_cmd(CMD18, lba);
 	if(result != 0x00) return 5;
-	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 1, 100); // Но по факту Read, но я не понимаю зачем это тут.
+	HAL_SPI_WriteFast(rxtxbuff, 1, 100); // Но по факту Read, но я не понимаю зачем это тут.
 	
 	// Ждём подтвержение
 	if( SPI_wait_ready(0xFE, &result) == 0 ) return 5;
 	
 	// Читаем 512 байт и отправляем CMD12 (STOP_TRANSMISSION)
-	HAL_SPI_ReadFast(&hspi2, buff, block_size, 1000);
+	HAL_SPI_ReadFast(buff, block_size, 1000);
 	SD_cmd(CMD12, 0x00000000);
 	
 	// Игнорируем контрольную сумму?
-	HAL_SPI_WriteFast(&hspi2, rxtxbuff, 2, 100); // Но по факту Read, но я не понимаю зачем это тут.
+	HAL_SPI_WriteFast(rxtxbuff, 2, 100); // Но по факту Read, но я не понимаю зачем это тут.
 	
 	return 0;
 }
-//-----------------------------------------------
+
 uint8_t SD_Write_Block (uint8_t *buff, uint32_t lba)
 {
   uint8_t result;
@@ -261,7 +251,7 @@ uint8_t SD_Write_Block (uint8_t *buff, uint32_t lba)
   if (cnt>=0xFFFF) return 6;
   return 0;
 }
-//-----------------------------------------------
+
 uint8_t sd_ini(void)
 {
 	uint8_t i, cmd;
@@ -270,14 +260,14 @@ uint8_t sd_ini(void)
 
   sdinfo.type = 0;
 	uint8_t ocr[4];
-	temp = hspi2.Init.BaudRatePrescaler;
-	hspi2.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; //156.25 kbbs
-	HAL_SPI_Init(&hspi2);
+	temp = hspi_obj->Init.BaudRatePrescaler;
+	hspi_obj->Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128; //156.25 kbbs
+	HAL_SPI_Init(hspi_obj);
 	SS_SD_DESELECT();
 	for(i=0;i<10;i++) //80 ��������� (�� ����� 74) ������� ��� 91
 		SPI_Release();
-	hspi2.Init.BaudRatePrescaler = temp;
-	HAL_SPI_Init(&hspi2);
+	hspi_obj->Init.BaudRatePrescaler = temp;
+	HAL_SPI_Init(hspi_obj);
 	SS_SD_SELECT();
   if (SD_cmd(CMD0, 0) == 1) // Enter Idle state
   {
