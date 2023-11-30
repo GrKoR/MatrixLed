@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
+#warning It doesn't work if '-O2'. Fast fix..
 #pragma GCC optimize("-Ofast")
 
 //--------------------------------------------------
