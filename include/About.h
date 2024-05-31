@@ -5,7 +5,7 @@ namespace About
 	static constexpr char name[] = "BackLightECU";
 	static constexpr char desc[] = "Back light control board for Pixel project";
 	static constexpr char board_type = Consts::BOARD_TYPE_BACKLIGHT;		// 5 bits
-	static constexpr char board_ver = 1;		// 3 bits
+	static constexpr char board_ver = 2;		// 3 bits
 	static constexpr char soft_ver = 1;			// 6 bits
 	static constexpr char can_ver = 1;			// 2 bits
 	static constexpr char git[] = "https://github.com/starfactorypixel/SlaveECU_BackLight";
